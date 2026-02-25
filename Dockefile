@@ -1,0 +1,28 @@
+FROM node:18-bullseys
+
+# Install ffmpeg
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy app source
+COPY . .
+
+# Create sessions directory
+RUN mkdir -p sessions data
+
+# Expose port
+EXPOSE 9090
+
+# Start bot
+CMD ["npm", "start"]
