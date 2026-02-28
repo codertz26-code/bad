@@ -1,4 +1,4 @@
-FROM node:18-bullseys
+FROM node:18-bullseye-slim
 
 # Install ffmpeg
 RUN apt-get update && \
