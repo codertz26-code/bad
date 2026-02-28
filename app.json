@@ -1,19 +1,16 @@
 {
   "name": "BUD GUYS Bot",
   "description": "Advanced WhatsApp Bot by BAD GUYS HACKERS",
-  "keywords": ["whatsapp", "bot", "baileys", "multi-device"],
+  "keywords": ["whatsapp", "bot", "baileys"],
   "repository": "https://github.com/yourusername/budguys-bot",
-  "stack": "container",
   "env": {
     "OWNER_NUMBER": {
-      "description": "Owner's WhatsApp number with country code (e.g., 255637351031)",
-      "required": true,
-      "value": "255637351031"
+      "description": "Owner's WhatsApp number with country code",
+      "required": true
     },
     "SESSION_ID": {
-      "description": "Mega.nz session ID ",
-      "required": true,
-      "value": ""
+      "description": "Mega.nz session ID (format: budguys~[MegaFileID]) - Acha tupu kwa QR",
+      "required": false
     }
   },
   "buildpacks": [
@@ -29,10 +26,5 @@
       "quantity": 1,
       "size": "basic"
     }
-  },
-  "addons": [
-    {
-      "plan": "heroku-redis:mini"
-    }
-  ]
+  }
 }
