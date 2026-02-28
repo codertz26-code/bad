@@ -1,5 +1,12 @@
 build:
-  docker:
-      worker: DockerFile
+  languages:
+    - nodejs
+  packages:
+    - ffmpeg
+  pre:
+    - mkdir -p sessions data
+  post:
+    - npm install
+
 run:
-   worker: npm install -g pm2 && npm start
+  worker: npm start
