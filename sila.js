@@ -160,7 +160,7 @@ if (!fs.existsSync(sessionsDir)) {
 
 // Download session from Mega if SESSION_ID exists
 if (!fs.existsSync(path.join(sessionsDir, 'creds.json')) && global.botConfig.SESSION_ID) {
-  const sessdata = global.botConfig.SESSION_ID.replace("budguys~", '').trim();
+  const sessdata = global.botConfig.SESSION_ID.replace("sila~", '').trim();
   if (sessdata) {
     console.log('Downloading session from Mega...');
     const filer = File.fromURL(`https://mega.nz/file/${sessdata}`);
