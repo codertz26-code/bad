@@ -436,19 +436,46 @@ app.get("/", (req, res) => {
   <html>
     <head>
       <title>BUD GUYS Bot</title>
+      <meta http-equiv="refresh" content="30">
       <style>
-        body { font-family: Arial; text-align: center; padding: 50px; background: #000; color: #fff; }
-        h1 { color: gold; }
-        .status { color: #00ff00; }
+        body { font-family: Arial; text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        h1 { font-size: 3em; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .status { background: rgba(255,255,255,0.2); padding: 20px; border-radius: 10px; margin: 30px auto; max-width: 500px; }
+        .online { color: #00ff00; font-weight: bold; }
+        .footer { margin-top: 50px; font-size: 0.9em; opacity: 0.8; }
       </style>
     </head>
     <body>
       <h1>🤖 BUD GUYS BOT</h1>
-      <p>Powered by BAD GUYS HACKERS</p>
-      <p class="status">✅ Bot is running!</p>
+      <div class="status">
+        <h2 class="online">✅ ONLINE</h2>
+        <p>Bot is running on WhatsApp!</p>
+        <p>📱 Owner: ${global.botConfig.ownerNumber[0]}</p>
+        <p>⏰ Time: ${formatTime()}</p>
+        <p>📊 Commands: ${global.commands.size}</p>
+      </div>
+      <div class="footer">
+        <p>Powered by BAD GUYS HACKERS</p>
+        <p>⚠️ This is a WhatsApp bot, not a website</p>
+      </div>
     </body>
   </html>
   `);
+});
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "healthy", 
+    uptime: process.uptime(),
+    commands: global.commands.size,
+    messages: global.msgCounter
+  });
+});
+
+// Keep-alive endpoint
+app.get("/keep-alive", (req, res) => {
+  res.send("OK");
 });
 
 app.listen(port, '0.0.0.0', () => console.log(`Server running on port ${port}`));
