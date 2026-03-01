@@ -13,11 +13,8 @@ const {
   default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
-  jidNormalizedUser,
   getContentType,
-  proto,
   downloadContentFromMessage,
-  generateWAMessageFromContent,
   jidDecode,
   fetchLatestBaileysVersion,
   Browsers
@@ -62,6 +59,7 @@ global.reconnectAttempts = 0;
 global.maxReconnectAttempts = 10;
 global.games = {};
 global.conn = null;
+global.sessionDownloaded = false; // Flag to prevent multiple downloads
 
 // Temp directory
 const tempDir = path.join(os.tmpdir(), 'budguys-temp');
@@ -158,24 +156,46 @@ if (!fs.existsSync(sessionsDir)) {
     fs.mkdirSync(sessionsDir, { recursive: true });
 }
 
-// Download session from Mega if SESSION_ID exists
-if (!fs.existsSync(path.join(sessionsDir, 'creds.json')) && global.botConfig.SESSION_ID) {
+// Download session from Mega if SESSION_ID exists - WITHOUT EXITING
+const downloadSessionIfNeeded = async () => {
+  // Check if session already exists or already downloaded
+  if (fs.existsSync(path.join(sessionsDir, 'creds.json'))) {
+    console.log("✅ Session already exists");
+    return true;
+  }
+  
+  if (global.sessionDownloaded) {
+    return true;
+  }
+  
+  if (!global.botConfig.SESSION_ID) {
+    console.log("No SESSION_ID provided, will use QR code");
+    return false;
+  }
+  
   const sessdata = global.botConfig.SESSION_ID.replace("sila~", '').trim();
-  if (sessdata) {
-    console.log('Downloading session from Mega...');
+  if (!sessdata) {
+    console.log("Invalid SESSION_ID format");
+    return false;
+  }
+  
+  console.log('Downloading session from Mega...');
+  
+  return new Promise((resolve) => {
     const filer = File.fromURL(`https://mega.nz/file/${sessdata}`);
     filer.download((err, data) => {
       if (err) {
         console.log('Failed to download session:', err.message);
+        resolve(false);
       } else {
         fs.writeFileSync(path.join(sessionsDir, 'creds.json'), data);
         console.log("✅ Session downloaded successfully");
-        console.log("🔄 Restarting...");
-        process.exit(0);
+        global.sessionDownloaded = true;
+        resolve(true);
       }
     });
-  }
-}
+  });
+};
 
 // ============ HELPER FUNCTIONS ============
 const isAdmin = async (zk, groupId, userId) => {
@@ -242,6 +262,9 @@ const sms = (conn, m) => {
 // ============ WHATSAPP CONNECTION ============
 async function connectToWA() {
   try {
+    // Download session first without exiting
+    await downloadSessionIfNeeded();
+    
     console.log("Connecting to WhatsApp...");
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionsDir);
@@ -271,18 +294,21 @@ async function connectToWA() {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         
         if (statusCode === DisconnectReason.loggedOut) {
-          console.log('Bot logged out, delete sessions folder');
-          fs.removeSync(sessionsDir);
+          console.log('Bot logged out, deleting sessions folder');
+          await fs.remove(sessionsDir);
           setTimeout(() => connectToWA(), 5000);
         } else {
-          console.log('Connection closed, reconnecting...');
+          console.log('Connection closed, reconnecting in 5 seconds...');
           setTimeout(() => connectToWA(), 5000);
         }
       } else if (connection === 'open') {
         console.log('✅ Bot connected successfully!');
         console.log(`👤 Logged in as: ${sock.user?.name || 'Unknown'}`);
+        console.log(`📱 Phone: ${sock.user?.id || 'Unknown'}`);
         
         global.reconnectAttempts = 0;
+        
+        // Load commands
         loadCommands();
 
         // Send startup message to owner
@@ -294,10 +320,14 @@ async function connectToWA() {
 
 > ${global.botConfig.botPower}`;
 
-        await sock.sendMessage(sock.user.id, { 
-          text: startupMsg,
-          contextInfo: getContextInfo({ sender: sock.user.id })
-        });
+        try {
+          await sock.sendMessage(sock.user.id, { 
+            text: startupMsg,
+            contextInfo: getContextInfo({ sender: sock.user.id })
+          });
+        } catch (e) {
+          console.log("Could not send startup message");
+        }
       }
     });
 
@@ -308,15 +338,12 @@ async function connectToWA() {
       const msg = update.messages[0];
       if (!msg.message) return;
       
-      // Don't ignore own messages - hii ndio ilikuwa inazuia owner commands
-      // Tumeondoa check ya msg.key.fromMe ili owner apate respond
-      
       try {
         const m = sms(sock, msg);
         const from = msg.key.remoteJid;
         const sender = msg.key.participant || msg.key.remoteJid;
         const isGroup = from.endsWith('@g.us');
-        const isOwner = sender === global.botConfig.ownerNumber[0] + '@s.whatsapp.net';
+        const isOwner = global.botConfig.ownerNumber.includes(sender.split('@')[0]);
         
         // Get message text
         let body = '';
@@ -333,7 +360,7 @@ async function connectToWA() {
           await sock.readMessages([msg.key]);
         }
         
-        // Handle commands - sasa inafanya kazi kwa wote
+        // Handle commands
         const prefix = global.botConfig.prefix;
         const isCmd = body.startsWith(prefix);
         
@@ -412,12 +439,13 @@ app.get("/", (req, res) => {
       <style>
         body { font-family: Arial; text-align: center; padding: 50px; background: #000; color: #fff; }
         h1 { color: gold; }
+        .status { color: #00ff00; }
       </style>
     </head>
     <body>
       <h1>🤖 BUD GUYS BOT</h1>
       <p>Powered by BAD GUYS HACKERS</p>
-      <p>Bot is running! ✅</p>
+      <p class="status">✅ Bot is running!</p>
     </body>
   </html>
   `);
@@ -426,9 +454,7 @@ app.get("/", (req, res) => {
 app.listen(port, '0.0.0.0', () => console.log(`Server running on port ${port}`));
 
 // ============ START BOT ============
-setTimeout(() => {
-  connectToWA();
-}, 2000);
+connectToWA();
 
 // Handle exit
 process.on('SIGINT', () => {
