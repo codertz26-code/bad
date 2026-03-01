@@ -1,16 +1,21 @@
 {
   "name": "BUD GUYS Bot",
-  "description": "Advanced WhatsApp Bot by BAD GUYS HACKERS",
-  "keywords": ["whatsapp", "bot", "baileys"],
+  "description": "WhatsApp Bot by BAD GUYS HACKERS",
+  "keywords": ["whatsapp", "bot", "nodejs"],
   "repository": "https://github.com/yourusername/budguys-bot",
+  "logo": "https://files.catbox.moe/brou6d.jpg",
+  "success_url": "/",
+  "stack": "heroku-22",
   "env": {
     "OWNER_NUMBER": {
       "description": "Owner's WhatsApp number with country code",
-      "required": true
+      "required": true,
+      "value": ""
     },
     "SESSION_ID": {
-      "description": "Mega.nz session ID (format: budguys~[MegaFileID]) - Acha tupu kwa QR",
-      "required": false
+      "description": "Mega.nz session ID - Acha tupu kwa QR code",
+      "required": true,
+      "value": ""
     }
   },
   "buildpacks": [
@@ -18,11 +23,11 @@
       "url": "heroku/nodejs"
     },
     {
-      "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest"
+      "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git"
     }
   ],
   "formation": {
-    "worker": {
+    "web": {
       "quantity": 1,
       "size": "basic"
     }
