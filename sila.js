@@ -77,6 +77,12 @@ const clearTempDir = () => {
 
 setInterval(clearTempDir, 5 * 60 * 1000)
 
+const express = require("express")
+const app = express()
+const port = process.env.PORT || 9090
+
+let conn = null
+
 //===================SESSION-AUTH============================
 if (!fs.existsSync(__dirname + '/sessions/creds.json')) {
   if (!config.SESSION_ID || config.SESSION_ID.trim() === '') {
@@ -106,14 +112,6 @@ if (!fs.existsSync(__dirname + '/sessions/creds.json')) {
     })
   })
 }
-
-const express = require("express")
-const app = express()
-const port = process.env.PORT || 9090
-
-let conn = null // Initialize conn as null
-
-//=============================================
 
 // Function to get the current date and time in Tanzania
 function getCurrentDateTimeParts() {
@@ -146,6 +144,7 @@ function getCurrentDateTimeParts() {
     return { date, time };
 }
 
+//=============================================
 async function connectToWA() {
   try {
     console.log("[ ♻ ] Connecting to WhatsApp ⏳️...")
@@ -242,7 +241,7 @@ async function connectToWA() {
 
     // ============ AUTO BIO UPDATE ============
     setInterval(async () => {
-        if (config.AUTO_BIO === "true") {
+        if (config.AUTO_BIO === "true" && conn) {
             const { date, time } = getCurrentDateTimeParts();
             const bioText = `𝚈𝚘𝚞𝚛 𝚋𝚘𝚝 𝚒𝚜 𝚗𝚘𝚠 𝚊𝚌𝚝𝚒𝚟𝚎 & 𝚛𝚎𝚊𝚍𝚢`;
             try {
@@ -275,7 +274,7 @@ async function connectToWA() {
       ? mek.message.ephemeralMessage.message 
       : mek.message;
       
-      if (config.READ_MESSAGE === 'true') {
+      if (config.READ_MESSAGE === 'true' && conn) {
         await conn.readMessages([mek.key]);
         console.log(`Marked message from ${mek.key.remoteJid} as read.`);
       }
@@ -283,11 +282,11 @@ async function connectToWA() {
       if(mek.message.viewOnceMessageV2)
         mek.message = (getContentType(mek.message) === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message
       
-      if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_SEEN === "true"){
+      if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_SEEN === "true" && conn){
         await conn.readMessages([mek.key])
       }
       
-      if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_REACT === "true"){
+      if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_REACT === "true" && conn){
         const ravlike = await conn.decodeJid(conn.user.id);
         const emojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '🇵🇰', '💜', '💙', '🌝', '🖤', '💚'];
         const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
@@ -299,7 +298,7 @@ async function connectToWA() {
         }, { statusJidList: [mek.key.participant, ravlike] });
       }                       
       
-      if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_REPLY === "true"){
+      if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_REPLY === "true" && conn){
         const user = mek.key.participant
         const text = `${config.AUTO_STATUS_MSG}`
         await conn.sendMessage(user, { text: text, react: { text: '💜', key: mek.key } }, { quoted: mek })
